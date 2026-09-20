@@ -1,0 +1,90 @@
+schema_version: "2.0"
+package: nvidia-openfold3-hosted-model
+version: "0.1.0"
+title: NVIDIA-hosted OpenFold3 structure prediction
+standard: other
+description: Explicit entity and artifact contracts for finite OpenFold3 inference. Exact-release and scientific qualification pending.
+biosim:
+  entrypoint: model:NvidiaOpenFold3
+  communication_step: 1.0
+  init_kwargs:
+    observation_timeout_s: 600.0
+    max_response_bytes: 20000000
+runtime:
+  python_version: "3.10"
+  dependencies:
+    packages:
+      - biosimulant==0.0.34
+      - httpx==0.28.1
+      - biopython==1.84
+      - numpy==1.26.4
+      - rdkit==2025.3.3
+io:
+  inputs:
+    - name: molecular_entities
+      signal_type: record
+      schema: {entities: json}
+      accepted_units: ["1"]
+      required: true
+      description: Explicit entities, chain copies, sequence or chemical identity and provenance. Optional pinned CCD reference supports heavy-atom mapping.
+    - name: alignments
+      signal_type: record
+      schema: {entries: json}
+      accepted_units: ["1"]
+      required: false
+      default: {entries: []}
+      description: Entity-bound native A3M/CSV records with source hashes; conditionally required for protein/RNA.
+    - name: templates
+      signal_type: record
+      schema: {entries: json}
+      accepted_units: ["1"]
+      required: false
+      default: {entries: []}
+      description: Protein-only original CIF text/hash/source and optional selected chain. Native use remains unverified.
+    - name: run_options
+      signal_type: record
+      schema: {parameters: json}
+      accepted_units: ["1"]
+      required: false
+      default: {parameters: {}}
+      description: Defaults diffusion_samples=1 and output_format=cif; no invented exposed seed.
+    - name: query_metadata
+      signal_type: record
+      schema: {query_id: str, request_id: str, provenance: json}
+      accepted_units: ["1"]
+      required: false
+      default: {query_id: "", request_id: "", provenance: {}}
+      description: Caller IDs or deterministic content-derived IDs with explicit provenance trust boundary.
+  outputs:
+    - name: predicted_complex
+      signal_type: record
+      schema: {entities: json, structures: json}
+      emitted_unit: "1"
+      description: All native samples with unchanged artifacts, atom coordinates in angstrom and explicit identity/ambiguity maps. Mixed identity/report envelope.
+    - name: confidence_scores
+      signal_type: record
+      schema: {records: json, semantics: json}
+      emitted_unit: "1"
+      description: OpenFold3 confidence only; pLDDT 0–100, pTM/ipTM dimensionless, PDE aggregation/units unresolved. Preserve null availability.
+    - name: inference_metrics
+      signal_type: record
+      schema: {native: json, semantics: json}
+      emitted_unit: "1"
+      description: Mixed native runtime report; empty/null remains unavailable. Individual metric units require versioned evidence.
+    - name: run_provenance
+      signal_type: record
+      schema: {request: json, provider: json, inputs: json, backend_identity: json, limitations: json}
+      emitted_unit: "1"
+      description: Exact request/response hashes, provider IDs, source identities, UTC/time-seconds fields and explicit unknown deployment digests.
+    - name: native_response
+      signal_type: scalar
+      dtype: str
+      emitted_unit: "1"
+      description: Original successful response JSON; error bodies are not scientific output signals.
+intended_use:
+  statement: Research biomolecular structure prediction with entity-specific identity checks; scientific qualification remains pending.
+caveats:
+  - Handwritten mapping logic requires manual review; ambiguous copies and ligand graph/stereo remain explicit.
+  - SMILES ATP native fixture returned incomplete chemical composition and is rejected despite HTTP200.
+  - Native source label is not a code/checkpoint/container digest; exact hosted equivalence unverified.
+  - Managed runtime, credentials, benchmark criteria and all proposed profiles remain unqualified.

@@ -1,16 +1,16 @@
 # OpenFold3 technical design
 
-BIO-007, 2026-09-20. Proposed design for manual implementation and review. No claim of approved requirements or managed runtime validation.
+BIO-007, 2026-09-20. Individually implemented local design; requirements review and managed runtime validation remain pending.
 
 One `NvidiaOpenFold3` BioModule uses `ExecutionPolicy.ONCE_BEFORE_RUN`. It validates one complex, submits one canonical request to `https://health.api.nvidia.com/v1/biology/openfold/openfold3/predict`, observes the existing NVIDIA UUID, validates all returned samples and emits five terminal reports. The runtime timestamp is a computational boundary; the diffusion sample index is not biological time. Dependencies will be pinned to the actually tested environment, separately from local source checkout and the unverified managed runtime.
 
-## Proposed ports
+## Declared ports
 
-All ports below are mixed report or identity envelopes with signal unit `1`. Every numerical scientific field carries its own units; no connection may interpret the whole envelope as one concentration or coordinate quantity. These contracts remain proposals until implemented, reviewed and supported by the target runtime.
+All ports below are mixed report or identity envelopes with signal unit `1`. Every numerical scientific field carries its own units; no connection may interpret the whole envelope as one concentration or coordinate quantity. The manifest, Python SignalSpec and Lab mappings are implemented and locally tested. Scientific compatibility lifecycle remains Proposed pending review and target-runtime support.
 
 | Direction | Port | Typed envelope | Scientific contract |
 |---|---|---|---|
-| Input | molecular_entities | record `{entities:json}` | Required ordered entity records with stable entity_id, type, explicit chain_ids, sequence or exactly one ligand SMILES/CCD specification, and source provenance. No default entity. |
+| Input | molecular_entities | record `{entities:json}` | Required ordered entity records with stable entity_id, type, explicit chain_ids, sequence or exactly one ligand SMILES/CCD specification, and source provenance. Optional CCD chemical_reference is original ccd_cif text, sha256 and source. No default entity. |
 | Input | alignments | record `{entries:json}` | Optional empty at signal layer, conditionally required for protein/RNA. Each entry names entity_id, unpaired/paired kind, database, format, unchanged text, sha256 and provenance. |
 | Input | templates | record `{entries:json}` | Optional empty list. Each entry names protein entity, original CIF text/hash, source/name, optional native chain_id and provenance. |
 | Input | run_options | record `{parameters:json}` | Defaults diffusion_samples=1 and output_format=cif. No exposed native seed is invented. |
@@ -23,7 +23,7 @@ All ports below are mixed report or identity envelopes with signal unit `1`. Eve
 
 ## Entity and artifact validation
 
-The hosted schema permits one input, 1–32 molecule records and sequence length 2–4096. The card says ≤1000 and current NIM examples say 1–4096: retain this discrepancy, use explicit tested bounds and do not imply that a small successful fixture validates the full domain. Chain copies count separately for identity and compute bounds; chain IDs must be unique and native-valid. PDB output can represent only single-character chain IDs, while CIF is the preferred lossless identity representation. Standard protein, DNA and RNA alphabets are validated by type. Nucleic acid sequences use 5′→3′ order; double-stranded DNA requires both strands explicitly.
+The hosted schema permits one input, 1–32 molecule records and sequence length 2–4096. The card says ≤1000 and current NIM examples say 1–4096: retain this discrepancy and do not imply that a small successful fixture validates the full domain. The wrapper additionally bounds total chain copies to32 and total polymer residues across copies to4096; these are client operational bounds, not NVIDIA accuracy/capacity guarantees. Chain IDs must be unique and native-valid. PDB output can represent only single-character chain IDs, while CIF is the preferred lossless identity representation. Standard protein, DNA and RNA alphabets are validated by type. Nucleic acid sequences use 5′→3′ order; double-stranded DNA requires both strands explicitly.
 
 Protein and RNA alignments must begin with the exact ungapped query. Preserve A3M insertions, row headers and column mapping; CSV keys require a separate parser and pairing semantics. Maximum three native database entries per alignment kind. Query-only rows are accepted only when explicitly supplied and labeled zero-hit. The BIO-005 collection needs an entity/chain selector and mapping adapter; paired collection rows are provider-asserted unless species evidence establishes them. No universal biological pairing claim follows from equal lengths or row counts.
 
@@ -41,6 +41,8 @@ The request uses canonical JSON bytes with SHA-256. Credentials are read only fr
 
 Native protein reference uses complete 1CRN chain A and genuine 101-row BIO-005 A3M, two samples, CIF output. Native RNA fixture uses complete 12-base 1ZIH sequence with explicit zero-hit query-only alignment. DNA fixture uses complete two-strand 1BNA sequence and explicit A/B chain copies. These old structures can overlap training; they are technical fixtures, not held-out benchmarks. Ligand, paired, template, CSV, PDB and mixed-entity cases require separate evidence. Exact native/adapter request parity and fresh inference comparison must be measured before claiming local runtime success.
 
-Tests must cover canonical manifest/SignalSpec/Lab parity; every conditional input requirement; type/shape/unit/identity failures; malformed native output; null confidence; sample ordering; source artifact hashes; transport bounds; no duplicate submission; and terminal BioWorld outputs. Scientific acceptance remains blocked by absent reviewed benchmark panel and tolerances. Managed credentials, runtime versions, immutable source change approval and exact release identity remain independent gates.
+There are66 passing local tests covering canonical manifest/SignalSpec/Lab parity; conditional inputs; type/shape/unit/identity failures; malformed native output; null confidence; sample ordering; source hashes; transport bounds; no automatic duplicate submission; chemical composition loss; standard side-chain completeness; single CCD nucleotides versus polymers; and all five terminal BioWorld outputs. Dependencies are biosimulant0.0.34, httpx0.28.1, biopython1.84, numpy1.26.4 and rdkit2025.3.3 on Python3.10.20, exactly pinned in the manifest. The last two parser refinements are checked against captured native responses and unit tests; live-run receipts retain the exact earlier source hashes they executed. Scientific acceptance remains blocked by absent reviewed benchmark panel and tolerances. Managed credentials, immutable source/run approval and exact release identity remain independent gates.
+
+Original sequence/molecule identity is checked before output acceptance. Standard protein side-chain heavy atoms and nucleic-acid sugar/base atoms are required; internal nucleotides also require phosphate atoms. Terminal chemistry such as protein OXT and first-nucleotide phosphate is not resolved by this contract and needs separate reference evidence. Copy mappings are candidate sets checked for a complete one-to-one assignment; ambiguous identical copies/isomers are retained rather than arbitrarily assigned. A ligand matching only element counts remains chemically unqualified. Actual ATP SMILES output lost atoms and fails even the composition prerequisite.
 
 Official sources are listed in MRS.md. Current hosted response identifies `source: trtbnm`; that string is not a code, checkpoint or container digest.

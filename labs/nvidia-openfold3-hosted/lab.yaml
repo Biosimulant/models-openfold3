@@ -1,0 +1,65 @@
+schema_version: "2.0"
+package: nvidia-openfold3-hosted
+version: "0.1.0"
+title: NVIDIA-hosted OpenFold3
+description: One individually authored finite prediction Lab preserving native samples and scientific identity gaps.
+models:
+  - alias: main
+    path: owned/models/main
+runtime:
+  python_version: "3.10"
+  duration: 1.0
+  communication_step: 1.0
+  initial_inputs: {}
+wiring: []
+io:
+  inputs:
+    - name: molecular_entities
+      maps_to: main.molecular_entities
+      value_type: record
+      format: json
+      required: true
+      description: Explicit entities, molecule types, chain copies and original sequence/SMILES/CCD identity with provenance.
+    - name: alignments
+      maps_to: main.alignments
+      value_type: record
+      format: json
+      required: false
+      default: {entries: []}
+      description: Entity-bound original A3M/CSV evidence; protein/RNA requirements checked before submission.
+    - name: templates
+      maps_to: main.templates
+      value_type: record
+      format: json
+      required: false
+      default: {entries: []}
+      description: Protein CIF source artifacts and exact hashes; native use/selection remains an evidence gap.
+    - name: run_options
+      maps_to: main.run_options
+      value_type: record
+      format: json
+      required: false
+      default: {parameters: {}}
+      description: One to five diffusion samples, CIF/PDB output. Samples are not biological time steps.
+    - name: query_metadata
+      maps_to: main.query_metadata
+      value_type: record
+      format: json
+      required: false
+      default: {query_id: "", request_id: "", provenance: {}}
+      description: Request/query IDs and caller provenance.
+  outputs:
+    - {name: predicted_complex, maps_to: main.predicted_complex, description: All native samples and explicit entity/chain/atom identity maps with ambiguity preserved.}
+    - {name: confidence_scores, maps_to: main.confidence_scores, description: Native scores with null availability and model-specific interpretation.}
+    - {name: inference_metrics, maps_to: main.inference_metrics, description: Original runtime metrics and unit/availability limitations.}
+    - {name: run_provenance, maps_to: main.run_provenance, description: Exact request and source/result digests with backend identity gaps.}
+    - {name: native_response, maps_to: main.native_response, description: Original successful JSON response for independent inspection.}
+intended_use:
+  statement: Research biomolecular structure prediction through NVIDIA OpenFold3 with explicit scientific interface checks and limitations.
+caveats:
+  - Native protein/RNA/CCD fixtures passed scoped technical checks; DNA timed out and SMILES ATP composition failed.
+  - Exact deployed release identity, artifact rights, managed runtime/credentials and scientific benchmarks remain unresolved.
+  - Ambiguous copy maps and unverified chemical graph/stereochemistry block qualified downstream scientific compatibility.
+prohibited_claims:
+  - Biological activity, binding affinity, clinical suitability or measured structural accuracy from confidence or HTTP success.
+  - Exact self-hosted release equivalence, managed runtime success or domain qualification without corresponding evidence.
